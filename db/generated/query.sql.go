@@ -3,7 +3,7 @@
 //   sqlc v1.29.0
 // source: query.sql
 
-package db
+package moneysplitter
 
 import (
 	"context"
@@ -47,13 +47,33 @@ func (q *Queries) CreateExpense(ctx context.Context, arg CreateExpenseParams) (E
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name) VALUES (?) RETURNING id, name
+INSERT INTO users (username, name, email, password_hash)
+VALUES (?, ?, ?, ?)
+RETURNING id, username, name, email, password_hash
 `
 
-func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, name)
+type CreateUserParams struct {
+	Username     string
+	Name         string
+	Email        string
+	PasswordHash string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.Name,
+		arg.Email,
+		arg.PasswordHash,
+	)
 	var i User
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+	)
 	return i, err
 }
 
@@ -116,8 +136,42 @@ func (q *Queries) GetExpenseParticipants(ctx context.Context, expenseID sql.Null
 	return items, nil
 }
 
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, name, email, password_hash FROM users WHERE email = ?
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+	)
+	return i, err
+}
+
+const getUserById = `-- name: GetUserById :one
+SELECT id, username, name, email, password_hash FROM users WHERE id = ?
+`
+
+func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+	)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
-SELECT id, name FROM users
+SELECT id, username, name, email, password_hash FROM users
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -129,7 +183,13 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	var items []User
 	for rows.Next() {
 		var i User
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Name,
+			&i.Email,
+			&i.PasswordHash,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

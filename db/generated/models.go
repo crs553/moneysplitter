@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.29.0
 
-package db
+package moneysplitter
 
 import (
 	"database/sql"
@@ -23,6 +23,9 @@ type ExpenseParticipant struct {
 }
 
 type User struct {
-	ID   int64
-	Name string
+	ID           int64
+	Username     string
+	Name         string
+	Email        string
+	PasswordHash string
 }
