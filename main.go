@@ -35,7 +35,7 @@ func run() error {
 	handlers.RegisterRoutes(router, queries)
 
 	log.Println("Server running on http://localhost:8080")
-	return router.Run(":8080")
+	return router.Run("0.0.0.0:8080")
 }
 
 func main() {
